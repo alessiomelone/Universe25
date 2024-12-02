@@ -141,4 +141,4 @@ Fixing all the other parameters as before (except for `maximum-offspring`, reduc
 
 ![image.png](Universe25%20-%20Social%20Status%20&%20Fights%2014fd8d44f8af8086b3b3f406ba507fb3/image%209.png)
 
-Even if the population peak expectedly reaches a significantly higher values than before, the overall trend is the same and mice extinct after 23,000 ticks.# Universe25
+Even if the population peak expectedly reaches a significantly higher values than before, the overall trend is the same and mice extinct after 23,000 ticks.
