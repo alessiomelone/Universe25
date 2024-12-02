@@ -593,7 +593,7 @@ initial-population
 initial-population
 0
 100
-100.0
+64.0
 1
 1
 NIL
@@ -623,7 +623,7 @@ energy-loss-rate
 energy-loss-rate
 1
 5
-1.0
+3.0
 1
 1
 NIL
@@ -683,7 +683,7 @@ overcrowding-threshold
 overcrowding-threshold
 1
 40
-40.0
+15.0
 1
 1
 NIL
@@ -693,7 +693,7 @@ SLIDER
 519
 493
 731
-527
+526
 behavior-change-probability
 behavior-change-probability
 0

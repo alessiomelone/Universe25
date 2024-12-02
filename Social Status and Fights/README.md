@@ -14,7 +14,7 @@
 
 It is necessary for females in order to give birth (they only mate if their energy is higher than 50% of the maximum energy. Can be brought back to `max-energy` when eating.
 
-•	**`age`**: Increases each tick, influences fertility (a mouse is considered fertile in a certain range of age). After a certain threshold 
+•	**`age`**: Increases each tick, influences fertility (a mouse is considered fertile in a certain range of age).
 
 •	**`social-status`**: For males, a value between 0 and 1 indicating dominance. Affects the probability of winning fights and a mouse is considered dominant and marked in red if its social-status goes over a certain threshold `dominance-threshold`.
 
