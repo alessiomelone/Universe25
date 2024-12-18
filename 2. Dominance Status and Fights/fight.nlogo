@@ -20,7 +20,7 @@ turtles-own [
   pregnant             ;; For females: whether the female is pregnant.
   pregnancy-timer      ;; For females: counts the ticks since pregnancy began.
   behavior             ;; The behavior of the mouse ("normal" or "beautiful").
-  my-dispenser         ;; The dispenser the dominant male considers as "his."
+  my-dispenser         ;; The dispenser the dominant male considers as "his".
 ]
 
 patches-own [
@@ -36,31 +36,31 @@ to setup
   setup-turtles              ;; Calls the procedure to create mice.
   set fight-count 0          ;; Initializes fight count.
   set fight-deaths 0         ;; Initializes fight death count.
-  set meal-interval max-age * 0.1   ;; Sets meal interval based on max age.
-  set mating-interval max-age * 0.2 ;; Sets mating interval based on max age.
-  set energy-threshold max-age * 0.3 ;; Sets energy threshold based on max age.
+  set meal-interval max-age * 0.1   ;; Sets meal interval based on max-age.
+  set mating-interval max-age * 0.2 ;; Sets mating interval based on max-age.
+  set energy-threshold max-age * 0.3 ;; Sets energy threshold based on max-age.
 end
 
 ;; Sets up the patches, particularly the food dispensers.
 to setup-patches
-  ask patches [ set is-food-dispenser false ] ;; Initialize all patches.
 
-  ;; Calculate the coordinates for placing food dispensers away from the edges.
+  ask patches [ set is-food-dispenser false ]
+
+  ;; Calculate the coordinates for placing food dispensers in the four corners of the grid. It was choosen to put them sligthly away for visualization purposes.
   let max-x max-pxcor - 2
   let min-x min-pxcor + 2
   let max-y max-pycor - 2
   let min-y min-pycor + 2
 
-  ;; Set specific patches as food dispensers.
   ask patch min-x min-y [ set is-food-dispenser true ]
   ask patch min-x max-y [ set is-food-dispenser true ]
   ask patch max-x min-y [ set is-food-dispenser true ]
   ask patch max-x max-y [ set is-food-dispenser true ]
 
-  ;; Color the food dispensers green.
   ask patches with [ is-food-dispenser ] [
     set pcolor green
   ]
+
 end
 
 ;; Creates the initial population of mice.
@@ -69,22 +69,25 @@ to setup-turtles
     setxy random-xcor random-ycor  ;; Place mice at random positions.
     set sex one-of ["M" "F"]       ;; Assign random sex.
     set energy random max-energy   ;; Assign random energy level.
-    set age random max-age         ;; Assign random age.
+    set age random max-age         ;; Assign random age in the range.
 
-    ifelse sex = "M" [
+    ifelse sex = "M"
+    [
       ;; Male-specific setup.
       set social-status random-float 1 ;; Random social status between 0 and 1.
       set color blue
       set last-mated 0
-      set my-dispenser nobody         ;; No dispenser claimed initially.
-    ] [
+      set my-dispenser nobody          ;; No dispenser claimed initially.
+    ]
+    [
       ;; Female-specific setup.
       set color pink
       set fertile false
       set pregnant false
       set pregnancy-timer 0
     ]
-    set behavior "normal"                         ;; Initial behavior is normal.
+
+    set behavior "normal"                         ;; Initial behavior is normal. @deprecated, set parameter behavior-change-probabilty to 0.
     set ticks-without-eating random meal-interval ;; Random time since last meal.
     set size 1.5
   ]
@@ -92,49 +95,47 @@ end
 
 ;; Main simulation loop.
 to go
+
   if not any? turtles [
     report-fight-stats     ;; Report fight statistics if no mice are left.
     stop
   ]
 
   ask turtles [
-    update-age-and-fertility-and-eating-timer  ;; Update age, fertility, and hunger.
-    update-behavior
-    move                ;; Decide on movement.
-    eat                 ;; Attempt to eat if conditions are met.
-    if sex = "M" [ fight ] ;; Males may engage in fights.
+    update-timers            ;; Update age, fertility, hunger, mating necessity.
+    move
+    eat                      ;; Attempt to eat if conditions are met.
+    if sex = "M" [ fight ]   ;; Males may engage in fights.
     if sex = "F" [ handle-pregnancy ] ;; Females handle pregnancy progression.
     if sex = "F" and not pregnant and fertile [ try-to-reproduce ] ;; Attempt reproduction.
-    lose-energy         ;; Decrease energy due to metabolism.
+    lose-energy
     check-death         ;; Check if the mouse dies due to energy or age.
+
+
 
     ;; Visual updates and counters.
     if sex = "M" [
-      set size 1.5 + (social-status) ;; Size represents dominance.
+      set size 1.5 + social-status ;; Size represents dominance.
       if social-status > dominance-threshold [set color red]
-      set last-mated last-mated + 1    ;; Increment time since last mating.
     ]
-    if sex = "F" [ set size 1.5 ]      ;; Female size remains constant.
+    if sex = "F" [ set size 1.5 ]
+
   ]
 
-  if ticks mod 100 = 0 [
-    report-fight-stats   ;; Periodically report fight statistics.
-  ]
 
   tick  ;; Advance the simulation clock.
 end
 
-;; Updates the mouse's age, fertility status, and hunger timer.
-to update-age-and-fertility-and-eating-timer
-  set age age + 1  ;; Increase age by one unit.
 
-  ;; Determine fertility based on age.
+to update-timers
+  set age age + 1
   set fertile (age >= max-age / 6 and age <= max-age / 1.5)
-
-  set ticks-without-eating ticks-without-eating + 1 ;; Increment hunger timer.
+  set ticks-without-eating ticks-without-eating + 1
+  if sex = "M" [ set last-mated last-mated + 1]
 end
 
-;; Updates the behavior of mice based on overcrowding.
+
+;; Updates the behavior of mice based on overcrowding. @deprecated
 to update-behavior
   if behavior = "normal" [
     if overcrowded? and sex = "M" [
@@ -147,6 +148,11 @@ to update-behavior
   ]
 end
 
+
+
+;;REPORTS
+
+
 ;; Reports the number of mice.
 to-report num-mice
   report count turtles
@@ -156,11 +162,13 @@ end
 to-report average-age
   ifelse any? turtles [
     report mean [age] of turtles
-  ] [
+  ]
+  [
     report 0  ;; Return 0 if no mice are present.
   ]
 end
 
+;; Reports the average-dominance
 to-report average-dominance
   ifelse any? turtles [
     report mean [social-status] of turtles with [sex = "M" and age > 0.6 * max-age]
@@ -168,6 +176,31 @@ to-report average-dominance
     report 0  ;; Return 0 if no mice are present.
   ]
 end
+
+
+;; Reports fight statistics.
+to report-fight-stats
+  show (word "Total Fights: " fight-count)
+  show (word "Deaths in Fights: " fight-deaths)
+end
+
+
+;; Reports the number of juvenile mice.
+to-report juveniles
+  report count turtles with [ age <= 1 ]
+end
+
+;; Reports the proportion of females in the population.
+to-report females
+  let fems count turtles with [ sex = "F" ]
+  let mice count turtles
+  report fems / mice
+end
+
+
+
+
+
 
 ;; Determines if the mouse is dominated by any nearby dominant male.
 to-report dominated?
@@ -182,45 +215,46 @@ to-report overcrowded?
   report (count turtles in-radius 5) > overcrowding-threshold
 end
 
-;; Reports the number of juvenile mice.
-to-report juveniles
-  report count turtles with [ age <= 1 ]
-end
 
-;; Reports the proportion of females in the population.
-to-report females
-  let fems count turtles with [ sex = "F" ]
-  let mice count turtles
-  report fems / mice
-end
 
-;; Reports fight statistics.
-to report-fight-stats
-  show (word "Total Fights: " fight-count)
-  show (word "Deaths in Fights: " fight-deaths)
-end
+;;BEHAVIORAL LOGIC
+
 
 ;; Movement logic for mice.
 to move
-  (ifelse behavior = "beautiful" [
+  (
+
+  ifelse behavior = "beautiful"
+  [
     ;; 'Beautiful ones' do not move much, focus on self-grooming.
     rt random-float 10 - 5
     fd 0.25
-  ] ticks-without-eating >= meal-interval or energy < energy-threshold [
+  ]
+  ticks-without-eating >= meal-interval or energy < energy-threshold
+  [
     ;; Mice seek food when hungry.
     seek-food
-  ] sex = "M" and last-mated >= mating-interval [
+  ]
+  sex = "M" and last-mated >= mating-interval
+  [
     ;; Male mice seek females for mating.
     seek-mate
-  ] [
+  ]
+  [
     ;; Default movement is random.
     move-randomly
-  ])
+  ]
+
+  )
+
 end
+
 
 ;; Procedure for seeking food.
 to seek-food
-  (ifelse sex = "M" and social-status >= dominance-threshold [
+  (
+   ifelse sex = "M" and social-status >= dominance-threshold
+   [
     ;; Dominant males consider the nearest dispenser as their own.
     if my-dispenser = nobody [
       ;; Assign the nearest dispenser as "my-dispenser."
@@ -229,32 +263,34 @@ to seek-food
         set my-dispenser min-one-of dispensers [distance myself]
       ]
     ]
-    ;; Move towards "my-dispenser" and hover around it.
-    ifelse my-dispenser != nobody [
+
+    ;; If one is assigned, either go towards it or hoover around it, depending on the distance.
+    ifelse my-dispenser != nobody
+    [
       ifelse distance my-dispenser > 3 [
+        ;; Go towards the dispenser.
         face my-dispenser
-        if can-move? 1 [
-          fd 1
-        ]
-      ] [
+        if can-move? 1 [ fd 1 ]
+      ]
+      [
         ;; Hover around the dispenser.
         rt random 360
-        if can-move? 1 [
-          fd 0.5
-        ]
+        if can-move? 1 [ fd 0.5 ]
       ]
-    ] [
+    ]
+    [
       ;; If no dispenser found, move randomly.
       move-randomly
     ]
-  ] sex = "F" [
+  ]
+  sex = "F"
+  [
     ;; Females always go to the nearest food dispenser.
     let nearest-dispenser min-one-of patches with [is-food-dispenser] [distance myself]
     face nearest-dispenser
-    if can-move? 1 [
-      fd 1
-    ]
-  ] [
+    if can-move? 1 [ fd 1 ]
+  ]
+  [
     ;; Non-dominant males prefer dispensers without dominant males nearby.
     let safe-dispensers patches with [
       is-food-dispenser and not any? turtles with [
@@ -264,75 +300,75 @@ to seek-food
     ifelse any? safe-dispensers [
       let nearest-dispenser min-one-of safe-dispensers [distance myself]
       face nearest-dispenser
-      if can-move? 1 [
-        fd 1
-      ]
-    ] [
+      if can-move? 1 [ fd 1 ]
+    ]
+    [
       ;; If no safe dispensers, go to the nearest one.
       let nearest-dispenser min-one-of patches with [is-food-dispenser] [distance myself]
       face nearest-dispenser
-      if can-move? 1 [
-        fd 1
-      ]
+      if can-move? 1 [ fd 1 ]
     ]
-  ])
+  ]
+  )
 end
+
+
 
 ;; Procedure for male mice to seek mates.
 to seek-mate
   ;; Find potential female mates.
   let potential-mates turtles with [
-    sex = "F" and
-    fertile and
-    not pregnant
+    sex = "F" and fertile and not pregnant
   ]
 
-  ifelse social-status >= dominance-threshold [
+  ifelse social-status >= dominance-threshold
+  [
     ;; Dominant males check for stronger males nearby.
     let stronger-males turtles with [
-      sex = "M" and
-      social-status > [social-status] of myself and
-      distance myself <= 5
+      sex = "M" and social-status > [social-status] of myself and distance myself <= 5
     ]
+
     ifelse any? stronger-males [
       ;; Stronger dominant male nearby, do not seek mates.
       move-randomly
-    ] [
+    ]
+    [
       ;; No stronger dominant male, seek any fertile female.
-      ifelse any? potential-mates [
+      ifelse any? potential-mates
+      [
         let nearest-female min-one-of potential-mates [distance myself]
         face nearest-female
-        if can-move? 1 [
-          fd 2
-        ]
-      ] [
+        if can-move? 1 [ fd 2 ]
+      ]
+      [
         ;; If no females, move randomly.
         move-randomly
       ]
     ]
-  ] [
+  ]
+  [
     ;; Non-dominant males seek females not surrounded by dominant males.
     let safe-females potential-mates with [
       not any? turtles with [
-        sex = "M" and
-        social-status >= dominance-threshold and
-        distance myself <= 5
+        sex = "M" and social-status >= dominance-threshold and distance myself <= 5
       ]
     ]
-    ifelse any? safe-females [
+
+    ifelse any? safe-females
+    [
       let nearest-female min-one-of safe-females [distance myself]
       face nearest-female
-      if can-move? 1 [
-        fd 2
-      ]
-    ] [
+      if can-move? 1 [ fd 2 ]
+    ]
+    [
       ;; If no safe females, move randomly.
       move-randomly
     ]
   ]
 end
 
-;; Procedure for random movement with a bias towards the center.
+
+;; Procedure for random movement with a bias towards the center, to enforce the change of food-dispenser.
 to move-randomly
   let center patch 0 0                  ;; Define the center of the environment.
   let angle-to-center towards center    ;; Calculate the angle toward the center.
@@ -340,10 +376,9 @@ to move-randomly
   ;; Add a random component to the movement angle.
   rt (angle-to-center - heading) + random-normal -30 30
 
-  if can-move? 1 [
-    fd 1   ;; Move forward.
-  ]
+  if can-move? 1 [ fd 1 ]
 end
+
 
 ;; Procedure for mice to eat.
 to eat
@@ -356,77 +391,84 @@ to eat
   ]
 end
 
-;; Fighting behavior among male mice.
+
+;; Fighting behavior among male adult mice.
 to fight
   let juvenile-age max-age * 0.2
   if behavior != "beautiful" and age >= juvenile-age [
-    if overcrowded? [
-      let num-mice-here count turtles in-radius 5
-      ;; Calculate fight probability based on overcrowding.
-      let fight-probability (num-mice-here - overcrowding-threshold) * fight-probability-factor
-      ;; Ensure fight probability is between 0 and 1.
-      set fight-probability max list 0 (min list fight-probability 1)
-      if random-float 1 < fight-probability [
-        ;; Increment fight count.
-        set fight-count fight-count + 1
 
-        ;; Proceed to fight.
-        let opponents turtles in-radius 1 with [
-          sex = "M" and
-          self != myself and
-          age >= juvenile-age and
-          behavior != "beautiful"
+    let num-mice-here count turtles in-radius 5
+
+    ;; Calculate fight probability based on overcrowding.
+    let fight-probability (num-mice-here - overcrowding-threshold) * fight-probability-factor
+    ;; Ensure fight probability is between 0 and 1.
+    set fight-probability max list 0 (min list fight-probability 1)
+
+
+    if random-float 1 < fight-probability [
+      ;; Increment fight count.
+      set fight-count fight-count + 1
+
+      ;; Proceed to fight.
+      let opponents turtles in-radius 1 with [
+        sex = "M" and
+        self != myself and
+        age >= juvenile-age and
+        behavior != "beautiful"
+      ]
+      if any? opponents [
+        let opponent one-of opponents
+
+        ;; Calculate probabilities based on social status and energy.
+        let ss-sum social-status + [social-status] of opponent
+        let social-status-prob 0.5
+        if ss-sum != 0 [
+          set social-status-prob social-status / ss-sum
         ]
-        if any? opponents [
-          let opponent one-of opponents
 
-          ;; Calculate probabilities based on social status and energy.
-          let ss-sum social-status + [social-status] of opponent
-          let social-status-prob 0.5
-          if ss-sum != 0 [
-            set social-status-prob social-status / ss-sum
-          ]
+        let energy-sum energy + [energy] of opponent
+        let energy-prob 0.5
+        if energy-sum != 0 [
+          set energy-prob energy / energy-sum
+        ]
 
-          let energy-sum energy + [energy] of opponent
-          let energy-prob 0.5
-          if energy-sum != 0 [
-            set energy-prob energy / energy-sum
-          ]
+        ;; Calculate win probability.
+        let win-probability (social-status-prob + energy-prob) / 2 + (random-float 0.2 - 0.1)
+        set win-probability max list 0 (min list win-probability 1)
 
-          ;; Calculate win probability.
-          let win-probability (social-status-prob + energy-prob) / 2 + (random-float 0.2 - 0.1)
-          set win-probability max list 0 (min list win-probability 1)
-
-          ifelse random-float 1 < win-probability [
-            ;; Current mouse wins.
-            set social-status min list (social-status + 0.05) 1
-            set energy energy - max-energy * 0.1
-            ask opponent [
-              set social-status max list (social-status - 0.05) 0
-              set energy energy - max-energy * 0.2
-              if energy <= 0 [
-                set fight-deaths fight-deaths + 1
-                die
-              ]
-            ]
-          ] [
-            ;; Opponent wins.
+        ifelse random-float 1 < win-probability
+        [
+          ;; Current mouse wins.
+          set social-status min list (social-status + 0.05) 1
+          set energy energy - max-energy * 0.1
+          ask opponent [
             set social-status max list (social-status - 0.05) 0
             set energy energy - max-energy * 0.2
-            ask opponent [
-              set social-status min list (social-status + 0.05) 1
-              set energy energy - max-energy * 0.1
-              if energy <= 0 [
-                set fight-deaths fight-deaths + 1
-                die
-              ]
+            if energy <= 0 [
+              set fight-deaths fight-deaths + 1
+              die
             ]
           ]
-          ;; Ensure social-status remains between 0 and 1.
-          set social-status min list (max list social-status 0) 1
         ]
+        [
+          ;; Opponent wins.
+          set social-status max list (social-status - 0.05) 0
+          set energy energy - max-energy * 0.2
+          ask opponent [
+            set social-status min list (social-status + 0.05) 1
+            set energy energy - max-energy * 0.1
+            if energy <= 0 [
+              set fight-deaths fight-deaths + 1
+              die
+            ]
+          ]
+        ]
+
+        ;; Ensure social-status remains between 0 and 1.
+        set social-status min list (max list social-status 0) 1
       ]
     ]
+
   ]
 end
 
@@ -469,6 +511,7 @@ to handle-pregnancy
   ]
 end
 
+
 ;; Procedure for giving birth to offspring.
 to give-birth
   let num-offspring random (max-offspring - min-offspring + 1) + min-offspring
@@ -482,7 +525,8 @@ to give-birth
         set color blue
         set last-mated 0
         set my-dispenser nobody
-      ] [
+      ]
+      [
         set color pink
         set fertile false
         set pregnant false
@@ -499,16 +543,18 @@ to give-birth
   set pregnancy-timer 0
 end
 
-;; Decreases the mouse's energy due to metabolism.
+
 to lose-energy
   set energy energy - energy-loss-rate
 end
+
 
 ;; Checks if the mouse dies due to low energy or old age.
 to check-death
   ifelse energy <= 0 [
     die
-  ] [
+  ]
+  [
     if age >= max-age [
       let death-probability (age - max-age) * death-probability-factor
       set death-probability min list death-probability 1
@@ -593,7 +639,7 @@ initial-population
 initial-population
 0
 100
-64.0
+100.0
 1
 1
 NIL
@@ -623,7 +669,7 @@ energy-loss-rate
 energy-loss-rate
 1
 5
-3.0
+1.0
 1
 1
 NIL
@@ -668,7 +714,7 @@ max-offspring
 max-offspring
 1
 10
-5.0
+10.0
 1
 1
 NIL
@@ -683,7 +729,7 @@ overcrowding-threshold
 overcrowding-threshold
 1
 40
-15.0
+24.0
 1
 1
 NIL
@@ -713,7 +759,7 @@ dominance-threshold
 dominance-threshold
 0
 1
-0.5
+0.85
 0.05
 1
 NIL
